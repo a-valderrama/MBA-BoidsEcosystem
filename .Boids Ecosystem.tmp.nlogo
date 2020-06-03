@@ -58,7 +58,7 @@ to go
   ask preys [
     flock
     set energy energy * 0.99
-    if round energy = 0 [ die ]
+    if energy = 0 [ die ]
   ]
   ;;wait for flocking behavior
 ;  if ticks > 200 [
@@ -70,10 +70,10 @@ to go
   ask predators [
       if energy < 70 [ hunt ]
       set energy energy * 0.99
-      if round energy = 0 [ die ]
+      if renergy = 0 [ die ]
     ]
   move
-;  ask patches with [grass = true] [ grow-grass ]
+  ;ask patches with [grass = true] [ grow-grass ]
   tick
 end
 
