@@ -54,17 +54,16 @@ to setup
   reset-ticks
 end
 
-;old
 to go
   ask patches with [grass = true] [ grow-grass ]
   ask preys [
     flock
-    set energy energy * 0.99
+    set energy energy * 0.975
     if round energy = 0 [ die ]
   ]
   ask predators [
     if energy < 70 [ hunt ]
-    set energy energy * 0.99
+    set energy energy * 0.955
     if round energy = 0 [ die ]
   ]
   move
@@ -73,7 +72,6 @@ end
 
 ;;Moves the agents of the system
 to move
-  ;same speed
   repeat 5 [ ask preys [ fd 0.2 ] display ]
   repeat 5 [ ask predators [ fd 0.25 ] display ]
 end
@@ -87,9 +85,10 @@ to flock  ;prey procedure
       avoid
     ][ align
        cohere ]
+;    produce-childs
   ]
   flee
-  if energy < 20 [ find-food ]
+  if energy < 30 [ find-food ]
 end
 
 ;;Find flockmates within range of vision
@@ -129,19 +128,19 @@ end
 
 ;;Preys make their way to the food areas
 to find-food  ;prey procedure
-  let possible-food patches in-cone prey-scope-vision prey-range-vision
-  let food possible-food with [ pcolor = green ]
-  ;approach visible food
-  if any? food [
-    set nearest-food min-one-of food [distance myself]
+  let environment patches in-cone prey-scope-vision prey-range-vision
+  let possible-food environment with [ pcolor != white ]
+  ;approach possible-food
+  if any? possible-food [
+    set nearest-food min-one-of possible-food [distance myself]
     set heading ([(towards myself + 180)] of nearest-food)
-    turn-towards heading 10
+    turn-towards heading 45
   ]
   eat-food
 end
 
 ;;Preys eat grass patches
-to eat-food ;prey procedure
+to eat-food  ;prey procedure
   let around patches in-cone 1 prey-range-vision
   let food one-of around with [ pcolor = green ]
   if food != Nobody[
@@ -150,8 +149,11 @@ to eat-food ;prey procedure
       ;lighter green
       set pcolor 57
     ]
-    let aux-energy energy * 1.80
-    set energy maximum-value aux-energy 100
+    ;around food behaviour
+;    let aux-energy energy * 1.80
+;    set energy maximum-value aux-energy 100
+    ;get away behaviour
+    set energy 80
   ]
 end
 
@@ -194,8 +196,9 @@ to eat-prey  ;predator procedure
   let food one-of preys in-cone 1 predator-range-vision
   if food != nobody [
     ask food [ die ]
-    let aux-energy energy * 1.80
-    set energy maximum-value aux-energy 100
+;    let aux-energy energy * 1.80
+;    set energy maximum-value aux-energy 100
+    set energy 100
   ]
 end
 
@@ -369,7 +372,7 @@ max-avoid-turn
 max-avoid-turn
 0
 20.0
-2.0
+1.0
 0.25
 1
 degrees
@@ -409,7 +412,7 @@ max-cohere-turn
 max-cohere-turn
 0
 20.0
-3.0
+1.0
 0.25
 1
 degrees
@@ -434,7 +437,7 @@ predators-number
 predators-number
 0
 10
-1.0
+0.0
 1
 1
 NIL
@@ -496,7 +499,7 @@ PLOT
 189
 1267
 413
-growth
+whatever
 NIL
 NIL
 0.0
@@ -507,7 +510,7 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -10899396 true "" "plot count patches with [pcolor = green]"
+"default" 1.0 0 -10899396 true "" "plot count preys"
 
 @#$#@#$#@
 ## WHAT IS IT?
