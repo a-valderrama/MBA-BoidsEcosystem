@@ -46,6 +46,7 @@ to setup
   ]
   ask patches with [ grass = true ][
     ask patches in-radius 8 [
+      set grass true
       set pcolor green
       set growth 100
     ]
@@ -55,25 +56,18 @@ end
 
 ;old
 to go
+  ask patches with [grass = true] [ grow-grass ]
   ask preys [
     flock
     set energy energy * 0.99
     if round energy = 0 [ die ]
   ]
-  ;;wait for flocking behavior
-;  if ticks > 200 [
-;    ask predators [
-;      if energy < 70 [ hunt ]
-;      set energy energy - 1
-;      if energy = 0 [ die ]
-;    ]
   ask predators [
-      if energy < 70 [ hunt ]
-      set energy energy * 0.99
-      if round energy = 0 [ die ]
-    ]
+    if energy < 70 [ hunt ]
+    set energy energy * 0.99
+    if round energy = 0 [ die ]
+  ]
   move
-;  ask patches with [grass = true] [ grow-grass ]
   tick
 end
 
@@ -156,7 +150,8 @@ to eat-food ;prey procedure
       ;lighter green
       set pcolor 57
     ]
-    set energy (energy * 1.80) mod 100
+    let aux-energy energy * 1.80
+    set energy maximum-value aux-energy 100
   ]
 end
 
@@ -199,13 +194,18 @@ to eat-prey  ;predator procedure
   let food one-of preys in-cone 1 predator-range-vision
   if food != nobody [
     ask food [ die ]
-    set energy (energy * 1.80) mod 100
+    let aux-energy energy * 1.80
+    set energy maximum-value aux-energy 100
   ]
 end
 
 ;;Creates areas of food
 to grow-grass ;patches procedure
-
+  ifelse round growth = 100 [
+    set pcolor green
+    set growth 100
+  ][ let aux-growth growth * 1.005
+     set growth maximum-value aux-growth 100]
 end
 
 ;; AUXILIAR METHODS
@@ -230,6 +230,12 @@ to turn-at-most [turn-degrees max-turn]  ;turtle procedure
     [ rt turn-degrees ]
 end
 
+;;Limits the value to a upper bound
+to-report maximum-value [value u-bound]
+  ifelse value > u-bound [
+    report u-bound
+  ][ report value ]
+end
 
 ; Based on Uri Wilensky's simulation (Netlogo's library)
 @#$#@#$#@
