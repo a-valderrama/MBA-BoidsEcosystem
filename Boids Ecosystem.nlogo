@@ -4,8 +4,11 @@ turtles-own[
   energy               ;simulates life
 ]
 
-;;Keep track of the nearest food-patch
+;;Keeps track of the nearest food-patch
 preys-own [ nearest-food ]
+
+;;Keeps track of the childhood period
+childs-own [ childhood ]
 
 patches-own[
   grass                ;differentiate food-patches
@@ -14,6 +17,7 @@ patches-own[
 
 ;;We need to differentiate the agents
 breed [ preys prey ]
+breed [ childs child ]
 breed [ predators predator ]
 
 to setup
@@ -57,12 +61,20 @@ end
 to go
   ask patches with [grass = true] [ grow-grass ]
   ask preys [
-    flock
+    preys-flock
     set energy energy * 0.975
     if round energy = 0 [ die ]
   ]
+;  ask childs [
+;    ifelse childhood = 0 [
+;      set color 7 - random 4
+;      set size 4
+;      set breed preys
+;    ][ set childhood childhood - 1
+;       childs-flock ]
+;  ]
   ask predators [
-    if energy < 70 [ hunt ]
+    if energy < 50 [ hunt ]
     set energy energy * 0.955
     if round energy = 0 [ die ]
   ]
@@ -74,10 +86,11 @@ end
 to move
   repeat 5 [ ask preys [ fd 0.2 ] display ]
   repeat 5 [ ask predators [ fd 0.25 ] display ]
+  repeat 5 [ ask childs [ fd 0.25 ] display ]
 end
 
 ;;Simulates the behavior of Boids
-to flock  ;prey procedure
+to preys-flock  ;prey procedure
   find-herd
   if any? herd[
     find-nearest-neighbor
@@ -85,7 +98,8 @@ to flock  ;prey procedure
       avoid
     ][ align
        cohere ]
-;    produce-childs
+    ;reproduce only if it belongs to a herd
+    if energy > 60 [ reproduce-preys ]
   ]
   flee
   if energy < 30 [ find-food ]
@@ -153,7 +167,21 @@ to eat-food  ;prey procedure
 ;    let aux-energy energy * 1.80
 ;    set energy maximum-value aux-energy 100
     ;get away behaviour
-    set energy 80
+    set energy 90
+  ]
+end
+
+;;Reproduce preys with enough energy that
+;;are in the same herd
+to reproduce-preys  ;observer procedure
+  if random-float 100 < preys-reproduce [
+    set energy (energy / 2)
+    ;differentiate preys from child-preys
+    hatch 1 [
+;      set size 3
+;      set color 125
+;      set childhood 100
+    ]
   ]
 end
 
@@ -243,10 +271,10 @@ end
 ; Based on Uri Wilensky's simulation (Netlogo's library)
 @#$#@#$#@
 GRAPHICS-WINDOW
-210
-10
-760
-561
+230
+33
+780
+584
 -1
 -1
 2.7
@@ -278,7 +306,7 @@ preys-number
 preys-number
 0
 1000
-400.0
+318.0
 1
 1
 NIL
@@ -365,14 +393,14 @@ HORIZONTAL
 
 SLIDER
 10
-278
+304
 205
-311
+337
 max-avoid-turn
 max-avoid-turn
 0
 20.0
-1.0
+2.0
 0.25
 1
 degrees
@@ -380,9 +408,9 @@ HORIZONTAL
 
 TEXTBOX
 46
-256
+282
 210
-286
+312
 Changes in movement\n\n
 12
 124.0
@@ -390,14 +418,14 @@ Changes in movement\n\n
 
 SLIDER
 10
-315
+341
 204
-348
+374
 max-align-turn
 max-align-turn
 0
 20.0
-5.0
+10.0
 0.25
 1
 degrees
@@ -405,9 +433,9 @@ HORIZONTAL
 
 SLIDER
 10
-352
+378
 204
-385
+411
 max-cohere-turn
 max-cohere-turn
 0
@@ -430,14 +458,14 @@ Prey's behavior
 
 SLIDER
 8
-445
+471
 203
-478
+504
 predators-number
 predators-number
 0
 10
-0.0
+3.0
 1
 1
 NIL
@@ -445,9 +473,9 @@ HORIZONTAL
 
 SLIDER
 8
-525
+551
 205
-558
+584
 predator-range-vision
 predator-range-vision
 0
@@ -460,9 +488,9 @@ HORIZONTAL
 
 SLIDER
 8
-484
+510
 204
-517
+543
 predator-scope-vision
 predator-scope-vision
 0
@@ -474,10 +502,10 @@ patches
 HORIZONTAL
 
 MONITOR
-790
-10
-901
-55
+814
+34
+925
+79
 NIL
 count preys
 17
@@ -486,19 +514,19 @@ count preys
 
 TEXTBOX
 32
-416
+442
 182
-436
+462
 Predator's behavior
 16
 124.0
 1
 
 PLOT
-925
-189
-1267
-413
+814
+128
+1156
+352
 whatever
 NIL
 NIL
@@ -511,6 +539,21 @@ false
 "" ""
 PENS
 "default" 1.0 0 -10899396 true "" "plot count preys"
+
+SLIDER
+8
+242
+202
+275
+preys-reproduce
+preys-reproduce
+0
+100
+5.0
+1
+1
+%
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
