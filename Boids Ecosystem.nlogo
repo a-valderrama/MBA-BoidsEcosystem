@@ -1,3 +1,5 @@
+;; Based on Uri Wilensky's simulation (Netlogo's library model)
+
 turtles-own[
   herd                 ;agentset of nearby flockmates
   nearest-neighbor     ;closest to boid
@@ -6,9 +8,6 @@ turtles-own[
 
 ;;Keeps track of the nearest food-patch
 preys-own [ nearest-food ]
-
-;;Keeps track of the childhood period
-childs-own [ childhood ]
 
 patches-own[
   grass                ;differentiate food-patches
@@ -40,8 +39,7 @@ to setup
     set color red
     set size 7
     setxy random-xcor random-ycor
-    ;enable waiting for flock behavior
-    set energy 300
+    set energy 100
   ]
   ;initialize food areas
   ask n-of 8 patches [
@@ -49,7 +47,7 @@ to setup
     set growth 100
   ]
   ask patches with [ grass = true ][
-    ask patches in-radius 8 [
+    ask patches in-radius 7 [
       set grass true
       set pcolor green
       set growth 100
@@ -59,38 +57,30 @@ to setup
 end
 
 to go
-  ask patches with [grass = true] [ grow-grass ]
+  ask patches with [grass = true and growth < 100] [ grow-grass ]
   ask preys [
-    preys-flock
+    flock
     set energy energy * 0.975
     if round energy = 0 [ die ]
   ]
-;  ask childs [
-;    ifelse childhood = 0 [
-;      set color 7 - random 4
-;      set size 4
-;      set breed preys
-;    ][ set childhood childhood - 1
-;       childs-flock ]
-;  ]
   ask predators [
-    if energy < 50 [ hunt ]
-    set energy energy * 0.955
+    if energy < 20 [ hunt ]
+    set energy energy * 0.975
     if round energy = 0 [ die ]
   ]
   move
+;  if [energy] of prey 0 < 20 [ stop ]
   tick
 end
 
 ;;Moves the agents of the system
 to move
   repeat 5 [ ask preys [ fd 0.2 ] display ]
-  repeat 5 [ ask predators [ fd 0.25 ] display ]
-  repeat 5 [ ask childs [ fd 0.25 ] display ]
+  repeat 5 [ ask predators [ fd 0.22 ] display ]
 end
 
 ;;Simulates the behavior of Boids
-to preys-flock  ;prey procedure
+to flock  ;prey procedure
   find-herd
   if any? herd[
     find-nearest-neighbor
@@ -98,11 +88,10 @@ to preys-flock  ;prey procedure
       avoid
     ][ align
        cohere ]
-    ;reproduce only if it belongs to a herd
-    if energy > 60 [ reproduce-preys ]
+    if energy >= 70 [ reproduce-preys ]
   ]
   flee
-  if energy < 30 [ find-food ]
+  if energy < 22 [ find-food ]
 end
 
 ;;Find flockmates within range of vision
@@ -121,12 +110,12 @@ to avoid  ;prey procedure
 end
 
 ;;Adjust preys heading to the average of their herdmates
-to align ;prey procedure
+to align  ;prey procedure
   turn-towards average-herd-heading max-align-turn
 end
 
 ;;Make preys move torwards average center of the herd
-to cohere ;prey procedure
+to cohere  ;prey procedure
   turn-towards average-heading-towards-herdmates max-cohere-turn
 end
 
@@ -136,7 +125,7 @@ to flee  ;prey procedure
   if any? threads [
     let thread min-one-of threads [ distance myself ]
     let new-heading ([towards myself + 180] of thread)
-    turn-away new-heading 50
+    turn-away new-heading 30
   ]
 end
 
@@ -174,13 +163,15 @@ end
 ;;Reproduce preys with enough energy that
 ;;are in the same herd
 to reproduce-preys  ;observer procedure
-  if random-float 100 < preys-reproduce [
-    set energy (energy / 2)
+  if random 100 < preys-reproduce [
+    ;reduce life to the third part
+    set energy 20
     ;differentiate preys from child-preys
-    hatch 1 [
-;      set size 3
-;      set color 125
-;      set childhood 100
+    hatch-preys 1 [
+      setxy random-xcor random-ycor
+      ;The agents begin without a herd
+      set herd no-turtles
+      set energy 100
     ]
   ]
 end
@@ -190,9 +181,9 @@ end
 to-report average-herd-heading  ;prey procedure
   let x-component sum [sin heading] of herd
   let y-component sum [cos heading] of herd
-  ifelse x-component = 0 and y-component = 0
-    [ report heading ]
-    [ report atan x-component y-component ]
+  ifelse x-component = 0 and y-component = 0[
+    report heading
+  ] [ report atan x-component y-component ]
 end
 
 ;;Average heading from the boid to their flockmates
@@ -214,7 +205,7 @@ to hunt  ;predator procedure
   if any? herd[
     set nearest-neighbor min-one-of herd [distance myself]
     set heading ([(towards myself + 180)] of nearest-neighbor)
-    turn-towards heading 10
+    turn-towards heading 5
   ]
   eat-prey
 end
@@ -224,9 +215,8 @@ to eat-prey  ;predator procedure
   let food one-of preys in-cone 1 predator-range-vision
   if food != nobody [
     ask food [ die ]
-;    let aux-energy energy * 1.80
-;    set energy maximum-value aux-energy 100
-    set energy 100
+;    set energy energy * 1.80
+    set energy 90
   ]
 end
 
@@ -235,8 +225,7 @@ to grow-grass ;patches procedure
   ifelse round growth = 100 [
     set pcolor green
     set growth 100
-  ][ let aux-growth growth * 1.005
-     set growth maximum-value aux-growth 100]
+  ][ set growth growth * 1.005 ]
 end
 
 ;; AUXILIAR METHODS
@@ -260,15 +249,6 @@ to turn-at-most [turn-degrees max-turn]  ;turtle procedure
         [ lt max-turn ] ]
     [ rt turn-degrees ]
 end
-
-;;Limits the value to a upper bound
-to-report maximum-value [value u-bound]
-  ifelse value > u-bound [
-    report u-bound
-  ][ report value ]
-end
-
-; Based on Uri Wilensky's simulation (Netlogo's library)
 @#$#@#$#@
 GRAPHICS-WINDOW
 230
@@ -304,9 +284,9 @@ SLIDER
 50
 preys-number
 preys-number
-0
+1
 1000
-318.0
+300.0
 1
 1
 NIL
@@ -400,7 +380,7 @@ max-avoid-turn
 max-avoid-turn
 0
 20.0
-2.0
+3.0
 0.25
 1
 degrees
@@ -440,7 +420,7 @@ max-cohere-turn
 max-cohere-turn
 0
 20.0
-1.0
+3.0
 0.25
 1
 degrees
@@ -495,7 +475,7 @@ predator-scope-vision
 predator-scope-vision
 0
 20
-10.0
+8.0
 0.5
 1
 patches
@@ -527,7 +507,7 @@ PLOT
 128
 1156
 352
-whatever
+#preys
 NIL
 NIL
 0.0
@@ -538,7 +518,7 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -10899396 true "" "plot count preys"
+"alive" 1.0 0 -10899396 true "" "plot count preys "
 
 SLIDER
 8
@@ -549,7 +529,7 @@ preys-reproduce
 preys-reproduce
 0
 100
-5.0
+6.0
 1
 1
 %
