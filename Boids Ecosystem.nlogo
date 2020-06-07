@@ -57,18 +57,22 @@ to setup
 end
 
 to go
-  ask patches with [grass = true and growth < 100] [ grow-grass ]
   ask preys [
     flock
     set energy energy * 0.975
     if round energy = 0 [ die ]
   ]
   ask predators [
+    if energy >= 70 and random 100 < predators-reproduce [
+      reproduce-agents
+    ]
     if energy < 20 [ hunt ]
     set energy energy * 0.975
     if round energy = 0 [ die ]
+
   ]
   move
+  ask patches with [grass = true and growth < 100] [ grow-grass ]
 ;  if [energy] of prey 0 < 20 [ stop ]
   tick
 end
@@ -88,7 +92,9 @@ to flock  ;prey procedure
       avoid
     ][ align
        cohere ]
-    if energy >= 70 [ reproduce-preys ]
+    if energy >= 70 and random 100 < preys-reproduce[
+      reproduce-agents
+    ]
   ]
   flee
   if energy < 22 [ find-food ]
@@ -153,26 +159,29 @@ to eat-food  ;prey procedure
       set pcolor 57
     ]
     ;around food behaviour
-;    let aux-energy energy * 1.80
-;    set energy maximum-value aux-energy 100
+;    set energy energy * 1.99
     ;get away behaviour
     set energy 90
   ]
 end
 
-;;Reproduce preys with enough energy that
-;;are in the same herd
-to reproduce-preys  ;observer procedure
-  if random 100 < preys-reproduce [
-    ;reduce life to the third part
-    set energy 20
-    ;differentiate preys from child-preys
-    hatch-preys 1 [
-      setxy random-xcor random-ycor
-      ;The agents begin without a herd
-      set herd no-turtles
-      set energy 100
-    ]
+;;Reproduce agets with enough energy. The
+;;descendant will be of the same breed as
+;;the parent.
+to reproduce-agents  ;agents procedure
+  let kind ([breed] of self)
+  ;just to initialize
+  let new-color 0
+  ifelse kind = preys[
+    set new-color 7 - random 4
+  ][ set new-color red ]
+  ;reduce life to the third part
+  set energy 20
+  ;differentiate preys from child-preys
+  hatch 1 [
+    set color new-color
+    set energy 80
+    fd 0.5
   ]
 end
 
@@ -405,7 +414,7 @@ max-align-turn
 max-align-turn
 0
 20.0
-10.0
+8.0
 0.25
 1
 degrees
@@ -437,25 +446,25 @@ Prey's behavior
 1
 
 SLIDER
-8
-471
-203
-504
+11
+447
+206
+480
 predators-number
 predators-number
 0
 10
-3.0
+5.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-8
-551
-205
-584
+11
+527
+208
+560
 predator-range-vision
 predator-range-vision
 0
@@ -467,10 +476,10 @@ degrees
 HORIZONTAL
 
 SLIDER
-8
-510
-204
-543
+11
+486
+207
+519
 predator-scope-vision
 predator-scope-vision
 0
@@ -482,10 +491,10 @@ patches
 HORIZONTAL
 
 MONITOR
-814
-34
-925
-79
+1162
+36
+1273
+81
 NIL
 count preys
 17
@@ -493,32 +502,33 @@ count preys
 11
 
 TEXTBOX
-32
-442
-182
-462
+35
+418
+185
+438
 Predator's behavior
 16
 124.0
 1
 
 PLOT
-814
-128
-1156
-352
-#preys
-NIL
-NIL
+806
+34
+1148
+258
+Agents
+time
+#agents
 0.0
 10.0
 0.0
 10.0
 true
-false
+true
 "" ""
 PENS
-"alive" 1.0 0 -10899396 true "" "plot count preys "
+"preys" 1.0 0 -7500403 true "" "plot count preys "
+"predators" 1.0 0 -2674135 true "" "plot count predators"
 
 SLIDER
 8
@@ -529,7 +539,51 @@ preys-reproduce
 preys-reproduce
 0
 100
-6.0
+7.0
+1
+1
+%
+HORIZONTAL
+
+PLOT
+807
+272
+1147
+486
+Grass growth
+time
+growth
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"grass" 1.0 0 -10899396 true "" "plot count patches with [ pcolor = green ]"
+
+MONITOR
+1291
+36
+1393
+81
+NIL
+count predators
+17
+1
+11
+
+SLIDER
+12
+566
+209
+599
+predators-reproduce
+predators-reproduce
+0
+100
+0.0
 1
 1
 %
