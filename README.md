@@ -1,2 +1,2 @@
-# MBA-BoidsEcosystem
-MBA Final Project
+# ABM-BoidsEcosystem
+ABM Final Project
